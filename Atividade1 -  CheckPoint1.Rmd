@@ -41,3 +41,4 @@ series_filtradas %>%
 series_filtradas %>%
   ggplot(aes(x = season_ep,y = UserRating, color = series_name)) + geom_line() + facet_grid(series_name~season)
 ```
+Agora, analisando as séries por temporada, é possível perceber que Sherlock possui os grandes picos de qualidade. Apesar de ter poucos episódios ela não se mantém estável. Porém, essa instabilidade em avaliações se repete para todas as séries. A primeira temporada de Orphan Black é a de mais continuidade, ou seja, onde não há grandes picos de avaliações positivas/negativas.
