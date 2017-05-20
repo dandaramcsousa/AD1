@@ -1,5 +1,5 @@
 ---
-title: "Series IMDB"
+title: "Séries IMDB"
 author: "Dandara Sousa"
 date: "19 de maio de 2017"
 output: html_document
@@ -20,7 +20,7 @@ library(readr)
 library(knitr)
 ```
 **O subconjunto de séries**
-Dentre as séries do IMDB foram escolhidas as seguintes séries a serem avaliadas. São consideradas o voto do usuário como forma de classificar as séries.
+</br> Dentre as séries do IMDB foram escolhidas as seguintes séries a serem avaliadas. São consideradas o voto do usuário como forma de classificar as séries.
 ```{r}
 series = read_csv("series_from_imdb.csv")
 series_filtradas = series %>% filter(series_name %in% c("How to Get Away with Murder", "Mr Robot","Orphan Black","Sherlock"))
@@ -28,7 +28,7 @@ unique(select(series_filtradas,series_name))
 
 ```
 
-**Qual das séries que você escolheu é mais bem avaliada no IMDB? A diferença é grande? Pequena? **
+**Qual das séries que você escolheu é mais bem avaliada no IMDB? A diferença é grande? Pequena?**
 ```{r} 
 series_filtradas %>%
   ggplot(aes(x = series_name,y = UserRating)) + geom_boxplot()
