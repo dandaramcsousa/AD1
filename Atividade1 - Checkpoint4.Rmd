@@ -104,3 +104,5 @@ series_antigas %>%
 ```
 
 Já no primeiro gráfico é possível notar que não há uma relação entre as avaliações e a longevidade de uma séries. Sherlock é um exemplo de série que vem decaindo a cada temporada e, pelo segundo gráfico, Friends também pode ser usado como exemplo. E, mais facilmente visto no segundo gráfico, percebe-se que séries que avaliações caindo não são rapidamente canceladas e temos como exemplo The Simpsons que desde a sexta temporada vem caindo nas avaliações e mesmo assim, na sua vigésima oitava temporada, está sendo produzida.
+
+
