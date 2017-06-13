@@ -12,6 +12,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(readr)
+library(plotly)
 
 library(knitr)
 
@@ -24,17 +25,12 @@ ui <- fluidPage(
    # Sidebar with a slider input for number of bins 
    sidebarLayout(
       sidebarPanel(
-         sliderInput("bins",
-                     "Number of bins:",
-                     min = 1,
-                     max = 50,
-                     value = 30),
-         selectInput("select", label = h3("Séries"), choices = sort(unique(series_antigas$series_name)))
+         selectInput("select", label = h3("Séries"), choices = sort(unique(series$series_name)))
       ),
       
       # Show a plot of the generated distribution
       mainPanel(
-         plotOutput("distPlot")
+         plotlyOutput("distPlot")
       )
    )
 )
@@ -42,19 +38,12 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
-  cresc = series_antigas %>%
+  cresc = series %>%
     group_by(series_name,season) %>%
     summarise(Mediana = median(UserRating))
   
-   output$distPlot <- renderPlot({
-     ggplot(data = cresc %>% filter(series_name %in% c(input$select)),aes(x = season ,y = Mediana)) + 
-       geom_point(alpha=.8) + 
-       geom_line() +
-       scale_x_continuous(breaks=seq(0, 13, 1)) +
-       scale_y_continuous(breaks=seq(6, 10, .5)) +
-       labs(x = "Temporada",y = "Mediana", title = "Notas por temporada") +
-       theme_bw() +
-       theme(legend.position = "bottom")
+   output$distPlot <- renderPlotly({
+     plot_ly(data = cresc %>% filter(series_name %in% c(input$select)),x = ~season ,y = ~Mediana) 
    })
 }
 
