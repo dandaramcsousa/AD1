@@ -5,11 +5,11 @@ date: "16 de junho de 2017"
 output: html_document
 ---
 
-```{r}
+```{r include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
  
-```{r}
+```{r include=FALSE}
 library(tidyverse, warn.conflicts = F)
 library(rvest)
 library(plotly)
@@ -21,15 +21,12 @@ library(tidyr)
 library(readr)
 library(knitr)
 source("plota_solucoes_hclust.R")
-
-
 ```
 
 #Tipos de filme de Jim Carrey
 
-Usaremos os dados do Rotten Tomatoes para analisar os filmes de Jim Carrey.
-
-```{r}
+Nessa página analisaremos os filmes feitos por Jim Carrey utilizando os dados do [Rotten Tomataoes](https://www.rottentomatoes.com/).A ideia é agrupar para encontrar padrões nos filmes analisando a bilheteria e a avaliação do público. Os dados após serem extraídos foram limpos e organizados em um tibble. Os filmes são:
+```{r echo = FALSE}
 from_page <- read_html("https://www.rottentomatoes.com/celebrity/jim_carrey") %>% 
     html_node("#filmographyTbl") %>% # A sintaxe da expressão é de um seletor à lá JQuery: https://rdrr.io/cran/rvest/man/html_nodes.html 
     html_table(fill=TRUE) %>% # Faz parse
@@ -42,20 +39,17 @@ filmes = from_page %>%
     mutate(RATING = as.numeric(gsub("%", "", RATING)), 
            `BOX OFFICE` = as.numeric(gsub("[$|M]", "", `BOX OFFICE`))) %>% 
     filter(`BOX OFFICE` >= 1) # Tem dois filmes que não parecem ter sido lançados no mundo todo
+unique(filmes$TITLE)
 
 ```
 
 
-##Intuição
 
-Através de agrupamentos vamos observar as semelhanças dentre os filmes.
-* Pela bilheteria:
+##Sobre agrupamento
+
+Agrupar é uma forma de observar as semelhanças num conjunto de dados. Os grupos são feitos por elementos que possuem mais algo em comum com os outros elementos do grupo do que com os que estão fora. 
+</br>Primeiramente, analisaremos os possíveis grupos pela **bilheteria** do filme de forma logarítimica que mostra melhor as informações de maior volume, sem focar tanto nos extremos.
 ```{r}
-filmes %>% 
-    ggplot(aes(x = `BOX OFFICE`)) + 
-    geom_histogram(bins = 20) + 
-    geom_rug()
-
 filmes %>% 
     ggplot(aes(x = `BOX OFFICE`)) + 
     geom_histogram(bins = 20) + 
@@ -63,14 +57,10 @@ filmes %>%
     geom_rug()
 
 ```
+</br>Através desse gráfico observamos claramente quatro grupos de valores de bilheteria, ou seja, os filmes quando analisados pela bilheteria se concentram em quatro partes.
 
-
-* Pela avaliação do público:
+</br>Agora, analisando a **avaliação** do público, temos:
 ```{r}
-filmes %>% 
-    ggplot(aes(x = "Filmes", y = RATING)) + 
-    geom_jitter(width = .01, height = 0, size = 2, alpha = .6)
-
 filmes %>% 
     ggplot(aes(x = RATING)) + 
     geom_histogram(bins = 16) + 
@@ -78,18 +68,22 @@ filmes %>%
 
 ```
 
+</br>Visualmente é fácil perceber que há cinco montantes de valores indicando a porcentagem de aprovação de cada filme.
 
 ##Agrupamento em duas dimensões
 
+Agora, agrupando as duas dimensões (x como avaliação e y como bilheteria) temos a seguinte relação para os filmes:
+
 ```{r}
 p = filmes %>% 
-    ggplot(aes(x = RATING, y = `BOX OFFICE`, label = TITLE)) + 
-    geom_point() 
-p
-#ggplotly(p)
+    ggplot(aes(x = RATING, y = `BOX OFFICE`, color = TITLE)) + 
+    geom_point() + theme(legend.position = "none") + scale_y_log10() 
+ggplotly(p,, width = 1000,height = 500)
 
 ```
 
+
+</br>Agora, agrupamento pelo dendrograma, observamos o que a o espaço na largura indica a dissimilaridade dos pontos. Ou seja, quanto maior o espaço menos chances há dos subgrupos estarem relacionados.Traçamos, então, uma linhha onde os espaços se tornar muito grandes e mostra que possivelmente esse é o melhor número de grupos para se trabalhar. No nosso caso, como visto abaixo, quatro.
 ```{r}
 agrupamento_h_2d = filmes %>% 
     column_to_rownames("TITLE") %>%
@@ -97,9 +91,11 @@ agrupamento_h_2d = filmes %>%
     dist(method = "euclidean") %>% 
     hclust(method = "centroid")
 
-ggdendrogram(agrupamento_h_2d, rotate = TRUE)
+ggdendrogram(agrupamento_h_2d, rotate = TRUE) + geom_hline(yintercept = 41, colour = "red")
 
 ```
+
+</br>A partir disso, então, veremos os possíveis agrupamentos para decidir se realmente 4 é um bom número. Vale lembrar que o agrupamento utilizado é aglomerativo e nem sempre o resultado obtido é o melhor possível.
 
 ```{r}
 agrupamento_h_2d = filmes %>% 
@@ -113,12 +109,15 @@ agrupamento_h_2d = filmes %>%
 ggdendrogram(agrupamento_h_2d, rotate = TRUE)
 
 filmes2 = filmes %>% mutate(`BOX OFFICE` = log10(`BOX OFFICE`))
-plota_hclusts_2d(agrupamento_h_2d, 
+h = plota_hclusts_2d(agrupamento_h_2d, 
                  filmes2, 
                  c("RATING", "`BOX OFFICE`"), 
                  linkage_method = "ward.D", ks = 1:6) + scale_y_log10()
+ggplotly(h, width = 1000,height = 500)
 ```
 
+
+</br>Analisamos também a distância entre os pontos de um grupo, para reafirmar a melhor opção. Quantos mais próximo de 1 mais próximo do seu próprio grupo um ponto está.
 ```{r}
 distancias = filmes %>% 
     column_to_rownames("TITLE") %>%

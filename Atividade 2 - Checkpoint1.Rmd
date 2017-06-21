@@ -24,7 +24,7 @@ Para esta análise foi utilizada um conjunto de dados de séries avaliadas no IM
 ```{r echo = FALSE}
   colnames(series)
 ```
-</br>Nesta análise nem todas as informações de uma série serão utilizadas. O foco será principalmente nas avaliações com base em votações dos usuários do IMDB feitas para séries da produtora CW.
+</br>Nesta análise nem todas as informações de uma série serão utilizadas. O foco será principalmente nas avaliações com base em votações dos usuários do IMDB feitas para séries da [produtora CW](https://en.wikipedia.org/wiki/The_CW).
 
 ###Análise de séries CW em exibição
 As atuais séries da CW e suas temporadas são:
