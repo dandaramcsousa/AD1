@@ -1,0 +1,35 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+
+```
+
+
+```{r}
+characters = read_csv("character_list5.csv")
+filmes = read_csv("meta_data7.csv") %>% na.omit()
+dados = filmes %>% left_join(characters)
+
+dados_c_sem_null =dados %>% 
+                group_by(title) %>%
+                summarise(nao_tem_null = !(any(age == "NULL"))) %>%
+                filter(nao_tem_null)
+filmes_sem_null = filmes %>% filter(title %in% dados_c_sem_null$title)
+
+dados_limpos = filmes_sem_null %>% left_join(characters)
+
+```
+
+```{r}
+
+```
+
+
