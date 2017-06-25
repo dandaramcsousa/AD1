@@ -30,6 +30,7 @@ plota_hclusts_1d = function(dados_filme,
 plota_hclusts_2d = function(agrupamento,
                             dados_filme,
                             nome_colunas, # coluna usada para distâncias
+                            txt,
                             dist_method = "euclidean", 
                             linkage_method = "complete", 
                             ks = 1:9){
@@ -44,7 +45,7 @@ plota_hclusts_2d = function(agrupamento,
                  grupo = as.character(cutree(agrupamento, .$k)))) 
     
     atribuicoes %>% 
-        ggplot(aes_string(x = nome_colunas[1], y = nome_colunas[2], colour = "grupo")) + 
+        ggplot(aes_string(x = nome_colunas[1], y = nome_colunas[2], colour = "grupo", text = txt)) + 
         geom_jitter(width = .02, height = 0, size = 2, alpha = .6) + 
         facet_wrap(~ paste(k, " grupos")) + 
         xlab("") %>% 

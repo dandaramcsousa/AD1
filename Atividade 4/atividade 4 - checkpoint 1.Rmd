@@ -1,35 +1,84 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Atividade 4 - Checkpoint 1"
+author: "Dandara Sousa"
+date: "June 23, 2017"
+output:
+  rmarkdown::html_document:
+    theme: lumen
+    code_folding: hide
 ---
 
 ```{r include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r include=FALSE, warning=FALSE}
 library(tidyverse)
-
+library(ggplot2)
+library(plotly)
+theme_classic()
 ```
 
+# A participação dos gêneros em filmes nos últimos 30 anos
 
-```{r}
+Estudar sobre gênero está e esteve em alta nos últimos anos. Se a vida imita a arte então o cinema acompanha as mudanças de um povo. Nessa análise, com a base de dados do IMDB, buscaremos identificar mudanças no cinema quando o gênero está em foco. Através dos personagens de 359 filmes observaremos além do gênero do personagem, a idade e o número de falas com o propósito de entender a influência do machismo nas telas de cinema. Mas **por que escolher nos últimos 30 anos?** A resposta é o [Teste de Bechdel](https://en.wikipedia.org/wiki/Bechdel_test) que busca avaliar o bom uso de personagens femininas em filmes e surgiu há cerca de 30 anos. Um dos pontos é sobre a quantidade de mulheres e esse abre discussão para o que veremos aqui.
+
+```{r include=FALSE, warning=FALSE}
 characters = read_csv("character_list5.csv")
 filmes = read_csv("meta_data7.csv") %>% na.omit()
 dados = filmes %>% left_join(characters)
 
-dados_c_sem_null =dados %>% 
+filmes_vs_null =dados %>% 
                 group_by(title) %>%
                 summarise(nao_tem_null = !(any(age == "NULL"))) %>%
                 filter(nao_tem_null)
-filmes_sem_null = filmes %>% filter(title %in% dados_c_sem_null$title)
+filmes_sem_null = filmes %>% filter(title %in% filmes_vs_null$title, year >= 1987)
 
 dados_limpos = filmes_sem_null %>% left_join(characters)
 
+dados2 = dados_limpos %>% filter(year >= 1987)
+
+names(dados2)[names(dados2)=="title"] <- "Filme"
+names(dados2)[names(dados2)=="year"] <- "Ano"
+names(dados2)[names(dados2)=="imdb_character_name"] <- "Personagem"
+names(dados2)[names(dados2)=="words"] <- "Palavras"
+names(dados2)[names(dados2)=="gender"] <- "Genero"
+names(dados2)[names(dados2)=="age"] <- "Idade"
+
+
+```
+### 1.Um passeio sobre os dados  
+Vamos observar um pouco sobre quem são nossos dados. Primeiro podemos observar o quão bem distribuído estão os filmes no decorrer dos anos, temos filmes pratiacamento durante todo o intervalo de tempo. E, também, podemos ver a presença do gênero [] mais forte na nossa base de dados.
+```{r warning=FALSE, message=FALSE}
+d = dados2 %>%
+  ggplot(aes(x= Filme ,y = Ano)) + geom_point() + 
+  theme(legend.position = "none",axis.title.x=element_blank(),axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) + 
+  labs(y = "Ano")
+ggplotly(d, width = 1000,height = 500)
 ```
 
 ```{r}
 
 ```
+
+### 2.Proporção de mulher nos filmes no decorrer dos anos  
+A presença de personagens femininos em filmes no decorrer dos anos é bastante discutida pelos fãs do cinema. É possível observar que as mulheres tomam maior espaço nas telas a partir de [época]. 
+```{r}
+
+```
+
+### 3. Discrepância entre número de falas no gênero  
+Não é difícil supor que as mulheres tem falas visivelmente reduzidas na maioria dos filmes. Seja o motivo de não serem protagonistas ou porque estão mais como apoio para algum personagem masculino (algo discutível pelo Teste de Bechdel). Visualmente, temos:
+```{r}
+
+```
+
+### 4. Relação gênero, idade e quantidade de fala
+
+```{r}
+
+```
+
 
 
