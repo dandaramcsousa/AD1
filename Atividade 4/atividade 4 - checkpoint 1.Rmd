@@ -47,8 +47,11 @@ names(dados2)[names(dados2)=="age"] <- "Idade"
 
 
 ```
+
 ### 1.Um passeio sobre os dados  
-Vamos observar um pouco sobre quem são nossos dados. Primeiro podemos observar o quão bem distribuído estão os filmes no decorrer dos anos, temos filmes pratiacamento durante todo o intervalo de tempo. E, também, podemos ver a presença do gênero [] mais forte na nossa base de dados.
+Vamos observar um pouco sobre quem são nossos dados. Primeiro podemos observar o quão bem distribuído estão os filmes no decorrer dos anos, temos filmes pratiacamento durante todo o 
+intervalo de tempo. E, também, podemos ver a presença do gênero [] mais forte na nossa base de dados.
+
 ```{r warning=FALSE, message=FALSE}
 d = dados2 %>%
   ggplot(aes(x= Filme ,y = Ano)) + geom_point() + 
@@ -59,22 +62,67 @@ ggplotly(d, width = 1000,height = 500)
 ```
 
 ```{r}
+female = dados2 %>%
+  filter(Genero == 'f') %>%
+  group_by(script_id, Genero) %>%
+  summarise(nf = n())
 
+male = dados2 %>%
+  filter(Genero == 'm') %>%
+  group_by(script_id) %>%
+  summarise(nm = n())
+
+genders = full_join(male,female, by = "script_id")
+
+dados_g = full_join(dados2,genders, by= "script_id")
 ```
 
 ### 2.Proporção de mulher nos filmes no decorrer dos anos  
 A presença de personagens femininos em filmes no decorrer dos anos é bastante discutida pelos fãs do cinema. É possível observar que as mulheres tomam maior espaço nas telas a partir de [época]. 
+
 ```{r}
 
 ```
 
 ### 3. Discrepância entre número de falas no gênero  
 Não é difícil supor que as mulheres tem falas visivelmente reduzidas na maioria dos filmes. Seja o motivo de não serem protagonistas ou porque estão mais como apoio para algum personagem masculino (algo discutível pelo Teste de Bechdel). Visualmente, temos:
+
 ```{r}
 
 ```
 
-### 4. Relação gênero, idade e quantidade de fala
+### 4. Agrupamento de personagens 
+
+As variáveis utilizadas serão:
+1. O ano do filme do personagem
+2. A bilheteria do filme
+3. A idade do personagem
+4. O índice de fala do personagem
+
+```{r}
+falas_por_filme = dados2 %>%
+  group_by(script_id) %>%
+  summarise(fpf = sum(Palavras))
+
+n_personagem = dados2 %>%
+  group_by(script_id) %>%
+  summarise(np = n())
+
+dados2 = merge(dados2, falas_por_filme, by = "script_id")
+dados2 = merge(dados2, n_personagem, by = "script_id")
+
+dados2 = dados2 %>%
+  group_by(Personagem, script_id) %>%
+  mutate(fpp = Palavras/fpf)
+
+dados2 = dados2 %>%
+  group_by(Personagem,script_id) %>%
+  mutate(epp = 1/np)
+
+
+```
+
+
 
 ```{r}
 
