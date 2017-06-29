@@ -28,22 +28,22 @@ characters = read_csv("character_list5.csv")
 filmes = read_csv("meta_data7.csv") %>% na.omit()
 dados = filmes %>% left_join(characters)
 
-filmes_vs_null =dados %>% 
+filmes_sem_null =dados %>% 
                 group_by(title) %>%
                 summarise(nao_tem_null = !(any(age == "NULL"))) %>%
                 filter(nao_tem_null)
-filmes_sem_null = filmes %>% filter(title %in% filmes_vs_null$title, year >= 1987)
+filmes_sem_null = filmes %>% filter(title %in% filmes_sem_null$title, year >= 1987)
 
-dados_limpos = filmes_sem_null %>% left_join(characters)
+dados = filmes_sem_null %>% left_join(characters)
 
-dados2 = dados_limpos %>% filter(year >= 1987)
+dados= dados %>% filter(year >= 1987)
 
-names(dados2)[names(dados2)=="title"] <- "Filme"
-names(dados2)[names(dados2)=="year"] <- "Ano"
-names(dados2)[names(dados2)=="imdb_character_name"] <- "Personagem"
-names(dados2)[names(dados2)=="words"] <- "Palavras"
-names(dados2)[names(dados2)=="gender"] <- "Genero"
-names(dados2)[names(dados2)=="age"] <- "Idade"
+names(dados)[names(dados)=="title"] <- "Filme"
+names(dados)[names(dados)=="year"] <- "Ano"
+names(dados)[names(dados)=="imdb_character_name"] <- "Personagem"
+names(dados)[names(dados)=="words"] <- "Palavras"
+names(dados)[names(dados)=="gender"] <- "Genero"
+names(dados)[names(dados)=="age"] <- "Idade"
 
 
 ```
@@ -53,7 +53,7 @@ Vamos observar um pouco sobre quem são nossos dados. Primeiro podemos observar 
 intervalo de tempo. E, também, podemos ver a presença do gênero [] mais forte na nossa base de dados.
 
 ```{r warning=FALSE, message=FALSE}
-d = dados2 %>%
+d = dados %>%
   ggplot(aes(x= Filme ,y = Ano)) + geom_point() + 
   theme(legend.position = "none",axis.title.x=element_blank(),axis.text.x=element_blank(),
         axis.ticks.x=element_blank()) + 
@@ -62,19 +62,25 @@ ggplotly(d, width = 1000,height = 500)
 ```
 
 ```{r}
-female = dados2 %>%
+female = dados %>%
   filter(Genero == 'f') %>%
   group_by(script_id, Genero) %>%
   summarise(nf = n())
 
-male = dados2 %>%
+male = dados %>%
   filter(Genero == 'm') %>%
   group_by(script_id) %>%
   summarise(nm = n())
 
 genders = full_join(male,female, by = "script_id")
 
-dados_g = full_join(dados2,genders, by= "script_id")
+genders = genders %>%
+  group_by(script_id) %>%
+  mutate(pm = (nf/(nf + nm)))
+
+genders = subset(genders,select =  -c(nm,Genero,nf))
+
+dados = left_join(dados, genders, by = "script_id")
 ```
 
 ### 2.Proporção de mulher nos filmes no decorrer dos anos  
@@ -96,35 +102,66 @@ Não é difícil supor que as mulheres tem falas visivelmente reduzidas na maior
 As variáveis utilizadas serão:
 1. O ano do filme do personagem
 2. A bilheteria do filme
-3. A idade do personagem
-4. O índice de fala do personagem
+3. A mediana idade do personagem
+4. O mediana índice de fala do personagem
 
 ```{r}
-falas_por_filme = dados2 %>%
+falas_por_filme = dados %>%
   group_by(script_id) %>%
   summarise(fpf = sum(Palavras))
 
-n_personagem = dados2 %>%
+n_personagem = dados %>%
   group_by(script_id) %>%
   summarise(np = n())
 
-dados2 = merge(dados2, falas_por_filme, by = "script_id")
-dados2 = merge(dados2, n_personagem, by = "script_id")
+dados = merge(dados, falas_por_filme, by = "script_id")
+dados = merge(dados, n_personagem, by = "script_id")
 
-dados2 = dados2 %>%
+#Falou por personagem
+dados = dados %>%
   group_by(Personagem, script_id) %>%
   mutate(fpp = Palavras/fpf)
 
-dados2 = dados2 %>%
+#Quantidade de fala por personagem
+dados = dados %>%
   group_by(Personagem,script_id) %>%
   mutate(epp = 1/np)
 
+#Índice de fala por personagem
+dados = dados %>%
+  group_by(Personagem,script_id) %>%
+  mutate(ifpp = fpp/np)
+
+#Mediana da idade das mulheres
+dados = dados %>%
+  group_by(script_id) %>%
+  mutate(med = median(as.numeric(Idade)))
+
+agrupamento = subset(dados,select = -c(lines_data, imdb_id, Palavras, Personagem,epp,fpp, Idade, Genero))
+agrupamento = subset(agrupamento,!duplicated(agrupamento$script_id))
 
 ```
 
 
 
 ```{r}
+summary(agrupamento)
+
+distance = agrupamento %>% 
+    column_to_rownames("script_id") %>% 
+    dist(method = "euclidean")
+
+hc = hclust(distance, method = "ward.D")
+plot(hc, cex = .6)
+plot(hc, hang = -1)
+
+n_clusters = 5
+rect.hclust(hc, k=n_clusters)
+
+agrupamento = agrupamento %>% 
+    mutate(cluster = hc %>% 
+               cutree(k = n_clusters) %>% 
+               as.character())
 
 ```
 
