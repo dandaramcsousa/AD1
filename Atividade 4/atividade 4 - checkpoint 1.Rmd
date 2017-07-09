@@ -1,5 +1,5 @@
 ---
-title: "Atividade 4 - Checkpoint 1"
+title: "Atividade 3 - Checkpoint 2"
 author: "Dandara Sousa"
 date: "June 23, 2017"
 output:
@@ -16,6 +16,10 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggplot2)
 library(plotly)
+library(cluster)
+library(mclust)
+library(GGally)
+library(factoextra)
 theme_classic()
 ```
 
@@ -45,23 +49,6 @@ names(dados)[names(dados)=="words"] <- "Palavras"
 names(dados)[names(dados)=="gender"] <- "Genero"
 names(dados)[names(dados)=="age"] <- "Idade"
 
-
-```
-
-### 1.Um passeio sobre os dados  
-Vamos observar um pouco sobre quem são nossos dados. Primeiro podemos observar o quão bem distribuído estão os filmes no decorrer dos anos, temos filmes pratiacamento durante todo o 
-intervalo de tempo. E, também, podemos ver a presença do gênero [] mais forte na nossa base de dados.
-
-```{r warning=FALSE, message=FALSE}
-d = dados %>%
-  ggplot(aes(x= Filme ,y = Ano)) + geom_point() + 
-  theme(legend.position = "none",axis.title.x=element_blank(),axis.text.x=element_blank(),
-        axis.ticks.x=element_blank()) + 
-  labs(y = "Ano")
-ggplotly(d, width = 1000,height = 500)
-```
-
-```{r}
 female = dados %>%
   filter(Genero == 'f') %>%
   group_by(script_id, Genero) %>%
@@ -81,31 +68,7 @@ genders = genders %>%
 genders = subset(genders,select =  -c(nm,Genero,nf))
 
 dados = left_join(dados, genders, by = "script_id")
-```
 
-### 2.Proporção de mulher nos filmes no decorrer dos anos  
-A presença de personagens femininos em filmes no decorrer dos anos é bastante discutida pelos fãs do cinema. É possível observar que as mulheres tomam maior espaço nas telas a partir de [época]. 
-
-```{r}
-
-```
-
-### 3. Discrepância entre número de falas no gênero  
-Não é difícil supor que as mulheres tem falas visivelmente reduzidas na maioria dos filmes. Seja o motivo de não serem protagonistas ou porque estão mais como apoio para algum personagem masculino (algo discutível pelo Teste de Bechdel). Visualmente, temos:
-
-```{r}
-
-```
-
-### 4. Agrupamento de personagens 
-
-As variáveis utilizadas serão:
-1. O ano do filme do personagem
-2. A bilheteria do filme
-3. A mediana idade do personagem
-4. O mediana índice de fala do personagem
-
-```{r}
 falas_por_filme = dados %>%
   group_by(script_id) %>%
   summarise(fpf = sum(Palavras))
@@ -137,32 +100,148 @@ dados = dados %>%
   group_by(script_id) %>%
   mutate(med = median(as.numeric(Idade)))
 
-agrupamento = subset(dados,select = -c(lines_data, imdb_id, Palavras, Personagem,epp,fpp, Idade, Genero))
-agrupamento = subset(agrupamento,!duplicated(agrupamento$script_id))
+ 
+agrupamento = subset(dados,select = -c(lines_data, imdb_id, Palavras, Personagem,epp,fpp,fpf,np, Idade, Genero))
+agrupamento = subset(agrupamento,!duplicated(agrupamento$script_id)) %>% na.omit()
 
 ```
 
+### 1.Um passeio sobre os dados  
+Vamos observar um pouco sobre quem são nossos dados. Primeiro podemos observar o quão bem distribuído estão os filmes no decorrer dos anos, temos filmes pratiacamento durante todo o 
+intervalo de tempo.
 
+```{r warning=FALSE, message=FALSE}
+d = dados %>%
+  ggplot(aes(x= Filme ,y = Ano)) + geom_point() + 
+  theme(legend.position = "none",axis.title.x=element_blank(),axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) + 
+  labs(y = "Ano")
+ggplotly(d, width = 1000,height = 500)
+```
+
+### 2. Agrupamento de personagens 
+
+As variáveis utilizadas serão:
+1. O ano do filme do personagem
+2. A bilheteria do filme
+3. A proporção de fala feminina
+4. O mediana índice de fala do personagem
+Utilizaremos para fim de agrupamento o [algoritmo kmeans](https://www.r-bloggers.com/k-means-clustering-in-r/).
+
+Primeiramente, vamos organizar nosso dado com propósito de perceber o melhor número para divisão de grupos. Através do gráfico abaixo é possível perceber que a partir de 4 a linha passa a ter uma curvatura mais suave. Isso indica que este é o nosso melhor número para grupos.
+
+```{r warning=FALSE, message=FALSE}
+
+agrupamento2 = agrupamento %>% 
+    mutate_each(funs(log), 4:7)
+agrupamento.g = agrupamento[,4:7]
+kmeans(agrupamento.g, centers = 15)
+
+wss <- (nrow(agrupamento.g)-1)*sum(apply(agrupamento.g,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(agrupamento.g, 
+  	centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+  ylab="Within groups sum of squares")
+
+```
+
+Nossos dados com 4 grupos possuem 90.8% de dados bem agrupados. O que é mais um bom sinal que nosso agrupamento estará correto. Vamos aceitar 4 grupos e ver como nosso gráfico ficará.
+```{r warning=FALSE, message=FALSE}
+
+set.seed(123)
+fit <- kmeans(agrupamento.g, centers = 4, nstart = 20) 
+aggregate(agrupamento,by=list(fit$cluster),FUN=mean)
+agrupamento <- data.frame(agrupamento, fit$cluster)
+fit
+
+```
+
+Os gráficos abaixo mostram como nosso agrupamento é dado pelo kmeans. É possível observar grupo a grupo para melhor compreensão.
+
+O primeiro grupo pode ser chamado de **fracassos da bilheteria** porque o que mais chama atenção é este fato. No resto, os dados são muito bem distribuídos com a proporção de fala feminina próxima à 0.85.É possível supor que filmes com um elenco com número significativo de mulheres não é tão bem recebido no cinema.
+```{r }
+names(agrupamento)[names(agrupamento)=="fit.cluster"] <- "cluster"
+
+p1 <- agrupamento %>% filter(cluster=='1') %>%
+  plot_ly(type = 'parcoords',
+          line = list(color ="#603f68"),
+          dimensions = list(
+            list(range = c(1987,2015),
+                 label = 'Ano do Filme', values = ~Ano),
+            list(range = c(0,880),
+                 label = 'Bilheteria', values = ~gross),
+            list(range = c(0,1),
+                 label = 'Proporção de fala feminina', values = ~pm),
+            list(range = c(0.00037,0.30371),
+                 label = 'Indice de fala por personagem', values = ~ifpp)
+            )
+          )
+
+p1
+
+
+```
+
+O segundo grupo podemos chamar de **quase igualitário que pouco rende**. É o grupo onde a proporção de mulheres chega em 0.8 e que a bilheteria, similiar ao grupo 1, foi baixa. Novamente temos isso ao decorrer de toda nossa linha do tempo.E, mais uma vez, observamos que os filmes com proporção de mulheres maior possui pouca bilheteria.
 
 ```{r}
-summary(agrupamento)
+p2 <- agrupamento %>% filter(cluster=='2') %>%
+  plot_ly(type = 'parcoords',
+          line = list(color ="#4b3f68"),
+          dimensions = list(
+            list(range = c(1987,2015),
+                 label = 'Ano do Filme', values = ~Ano),
+            list(range = c(0,880),
+                 label = 'Bilheteria', values = ~gross),
+            list(range = c(0,1),
+                 label = 'Proporção de fala feminina', values = ~pm),
+            list(range = c(0.00037,0.30371),
+                 label = 'Indice de fala por personagem', values = ~ifpp)
+            )
+          )
 
-distance = agrupamento %>% 
-    column_to_rownames("script_id") %>% 
-    dist(method = "euclidean")
+p2
 
-hc = hclust(distance, method = "ward.D")
-plot(hc, cex = .6)
-plot(hc, hang = -1)
+```
 
-n_clusters = 5
-rect.hclust(hc, k=n_clusters)
+O terceiro grupo chamaremos de **sucessos das poucas falas** porque é um grupo que distoa na bilheteria mas que a proporção de mulher é baixíssima (ou seja, há muitos homens no elenco) e o índice de fala por personagem é muito pequeno. 
+```{r}
+p3 <- agrupamento %>% filter(cluster=='3') %>%
+  plot_ly(type = 'parcoords',
+          line = list(color ="#7a4964"),
+          dimensions = list(
+            list(range = c(1987,2015),
+                 label = 'Ano do Filme', values = ~Ano),
+            list(range = c(0,880),
+                 label = 'Bilheteria', values = ~gross),
+            list(range = c(0.05,0.85),
+                 label = 'Proporção de fala feminina', values = ~pm),
+            list(range = c(0.00037,0.30371),
+                 label = 'Indice de fala por personagem', values = ~ifpp)
+            )
+          )
 
-agrupamento = agrupamento %>% 
-    mutate(cluster = hc %>% 
-               cutree(k = n_clusters) %>% 
-               as.character())
+p3
+```
 
+O último grupo podemos chamar de **bilheteria mediana** pois a bilheteria está no meio da nossa análise. É possível observar que proporção de mulheres no filme é bem baixa e o padrão de um baixo índice de fala se repete.
+```{r}
+p4 <- agrupamento %>% filter(cluster=='4') %>%
+  plot_ly(type = 'parcoords',
+          line = list(color ="#7a6249"),
+          dimensions = list(
+            list(range = c(1987,2015),
+                 label = 'Ano do Filme', values = ~Ano),
+            list(range = c(0,880),
+                 label = 'Bilheteria', values = ~gross),
+            list(range = c(0.05,0.85),
+                 label = 'Proporção de fala feminina', values = ~pm),
+            list(range = c(0.00037,0.30371),
+                 label = 'Indice de fala por personagem', values = ~ifpp)
+            )
+          )
+
+p4
 ```
 
 
