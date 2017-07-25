@@ -21,9 +21,9 @@ library(knitr)
 
 ```
 
-##O conjunto de dados
+## O conjunto de dados
 
-Temos, aqui, uma amostra dos commits dados no GitHub no período 2016-2017. É possível observar a quantidade de pessoas que editaram arquivos de uma determinada extensão durante os dois anos.
+Temos, aqui, uma amostra dos commits dados no [GitHub](http://github.com/) no período 2016-2017. É possível observar a quantidade de pessoas que editaram arquivos de uma determinada extensão durante os dois anos.Os dados brutos contém a contagem de quantas pessoas editaram arquivos com cada extensão de arquivo em cada dia de 2016 e 2017 no github. Não temos dados de todos os repositórios nem de todos os usuários, portanto estamos trabalhando com uma amostra. 
 
 ```{r warning=FALSE, message=FALSE}
 commits = read.csv("github-users-committing-filetypes.csv")
@@ -50,11 +50,12 @@ linguagens = conjunto %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   theme_minimal()
 
-ggplotly(linguagens, width = 720,height = 480) 
+ggplotly(linguagens, width = 720,height = 480)
   
 ```
 
-Observando que md e js são as extensões mais populares da nossa amostra as utilizaremos para fins de análise. Primeiro vamos preparar os dados para nossa análise facilitando a relação de data e dia da semana.
+Observando que md e js são as extensões mais populares da nossa amostra as utilizaremos para fins de análise, ou seja, vamos considerar que Markdown e Javascript são as linguagens mais populares. Por Markdown, vamos inferir que são as pessoas que programam em R.
+Primeiro vamos preparar os dados para nossa análise facilitando a relação de data e dia da semana.
 
 ```{r warning=FALSE, message=FALSE}
 commits = commits %>% filter(Extensao == "js" | Extensao == "md")
@@ -66,9 +67,6 @@ commits = commits %>%
 commits = commits %>%
   mutate(dia_semana = weekdays(as.Date(data_completa,'%d-%m-%Y')))
 
-```
-
-```{r warning=FALSE, message=FALSE}
 md = commits %>% filter(Extensao == "md")
 
 md.2016 = md %>% filter(Ano == "2016")
@@ -135,6 +133,7 @@ ggplotly(js1, width = 720,height = 480)
 ## Popularidade por dia de semana
 
 Para essa sessão vamos nos basear em dois questionamentos:
+
 1. Para cada uma das linguagens de programação, há uma diferença significativa na sua popularidade durante a semana e durante o fim de semana? Essa diferença é grande?
 2. Existe uma diferença significativa entre as duas linguagens na sua variação de popularidade nos finais de semana?
 
@@ -150,18 +149,18 @@ js = js %>%
 md1 = md %>% 
   ggplot(aes(x = dia_semana, y = Usuarios_Dia)) + 
   geom_point() + 
-  scale_x_discrete(limits=c("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")) + 
-  labs(title = "Edições por Dia da Semana (Java)", x = "Dia da Semana" , y= "Usuários que Fizeram Edições")
+  scale_x_discrete(limits=c("segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo")) + 
+  labs(title = "Edições por Dia da Semana (Markdown)", x = "Dia da Semana" , y= "Usuários que Fizeram Edições")
 
 js1 = js %>% 
   ggplot(aes(x = dia_semana, y = Usuarios_Dia)) + 
   geom_point() + 
-  scale_x_discrete(limits=c("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")) + 
-  labs(title = "Edições por Dia da Semana (Java)", x = "Dia da Semana" , y= "Usuários que Fizeram Edições")
+  scale_x_discrete(limits=c("segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo")) + 
+  labs(title = "Edições por Dia da Semana (Javascript)", x = "Dia da Semana" , y= "Usuários que Fizeram Edições")
 
 require("gridExtra")
 grid.arrange(md1,js1)
 
 ```
 
-A partir dos gráficos é fácil perceber a diferença de popularidade de uma linguagem durante os dias úteis e finais de semana. A diferença é grande a ponto de ser facilmente percepitível.
+A partir dos gráficos pode-se perceber a diferença de popularidade de uma linguagem durante os dias úteis e finais de semana. A diferença é grande a ponto de ser facilmente percepitível. Além disso, é possível notar que entre as linguagens elas seguem padrões parecidos: ambas tem picos nas terças e quartas e descrecem com o decorrer da semana. Diante disso, conseguimos inferir que em finais de semana os programadores dessas linguagens preferem dar um tempo visto que foram mais produtivos nos dias úteis.
