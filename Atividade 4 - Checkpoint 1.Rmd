@@ -1,0 +1,167 @@
+---
+title: "Atividade 4 - Checkpoint 1"
+author: "Dandara Sousa"
+date: "22 de julho de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(plotly)
+library(knitr)
+
+
+```
+
+##O conjunto de dados
+
+Temos, aqui, uma amostra dos commits dados no GitHub no período 2016-2017. É possível observar a quantidade de pessoas que editaram arquivos de uma determinada extensão durante os dois anos.
+
+```{r warning=FALSE, message=FALSE}
+commits = read.csv("github-users-committing-filetypes.csv")
+
+names(commits)[names(commits) == "file_extension"] <- "Extensao"
+names(commits)[names(commits) == "month_day"] <- "Dia"
+names(commits)[names(commits) == "the_month"] <- "Mes"
+names(commits)[names(commits) == "the_year"] <- "Ano"
+names(commits)[names(commits) == "users"] <- "Usuarios"
+
+unique(commits$Extensao)
+
+```
+
+As linguagens da nossa amostra são as seguintes e dentre elas vamos escolher as duas mais populares:
+```{r warning=FALSE, message=FALSE}
+conjunto = commits %>%
+  group_by(Extensao) %>%
+  summarise(nUsuarios = max(Usuarios))
+
+linguagens = conjunto %>%
+  ggplot(aes(x = reorder(Extensao, nUsuarios), y = nUsuarios)) + 
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme_minimal()
+
+ggplotly(linguagens, width = 720,height = 480) 
+  
+```
+
+Observando que md e js são as extensões mais populares da nossa amostra as utilizaremos para fins de análise. Primeiro vamos preparar os dados para nossa análise facilitando a relação de data e dia da semana.
+
+```{r warning=FALSE, message=FALSE}
+commits = commits %>% filter(Extensao == "js" | Extensao == "md")
+head(commits)
+names(commits)
+
+commits = commits %>%
+  mutate(data_completa = paste(Dia, Mes, Ano, sep = '-'))
+commits = commits %>%
+  mutate(dia_semana = weekdays(as.Date(data_completa,'%d-%m-%Y')))
+
+```
+
+```{r warning=FALSE, message=FALSE}
+md = commits %>% filter(Extensao == "md")
+
+md.2016 = md %>% filter(Ano == "2016")
+md.2016 = md.2016 %>% 
+  group_by(Mes) %>%
+  mutate(Usuarios_Mes = sum(Usuarios))
+
+md.2017 = md %>% filter(Ano == "2017")
+md.2017 = md.2017 %>%
+  group_by(Mes) %>%
+  mutate(Usuarios_Mes = sum(Usuarios))
+
+md = rbind(md.2016,md.2017)
+
+js = commits %>% filter(Extensao == "js")
+
+js.2016 = js %>% filter(Ano == "2016")
+js.2016 = js.2016 %>% 
+  group_by(Mes) %>%
+  mutate(Usuarios_Mes = sum(Usuarios))
+
+js.2017 = js %>% filter(Ano == "2017")
+js.2017 = js.2017 %>%
+  group_by(Mes) %>%
+  mutate(Usuarios_Mes = sum(Usuarios))
+
+js = rbind(js.2016,js.2017)
+
+commits = rbind(md,js)
+
+```
+
+## Linha do tempo
+
+Para facilitar o entendimento da nossa amostra, vamos visualizar como as linguagens se comportam durante o tempo. É possível perceber a discrepância de valores entre extensões md e js, como ambas foram mais populares em 2016, ou seja, de como no decorrer do tempo a contagem de commits vem caindo.
+
+```{r warning=FALSE, message=FALSE}
+md1 = md %>%
+  ggplot(aes(x= Mes, y = Usuarios_Mes, colour = as.factor(Ano))) +
+  geom_line() + 
+  geom_point() +
+  scale_x_continuous(breaks=c(1,3,6,9,12)) +
+  labs(title = "Edições Mensalmente (Markdown)", x = "Mês" , y= "Usuários Editores", colour = "Ano") +
+  theme_minimal()
+
+ggplotly(md1, width = 720,height = 480)
+
+
+```
+
+```{r warning=FALSE, message=FALSE}
+js1 = js %>%
+  ggplot(aes(x= Mes, y = Usuarios_Mes, colour = as.factor(Ano))) +
+  geom_line() + 
+  geom_point() +
+  scale_x_continuous(breaks=c(1,3,6,9,12)) +
+  labs(title = "Edições Mensalmente (Javascript)", x = "Mês" , y= "Usuários Editores", colour = "Ano") +
+  theme_minimal()
+
+ggplotly(js1, width = 720,height = 480)
+```
+
+
+## Popularidade por dia de semana
+
+Para essa sessão vamos nos basear em dois questionamentos:
+1. Para cada uma das linguagens de programação, há uma diferença significativa na sua popularidade durante a semana e durante o fim de semana? Essa diferença é grande?
+2. Existe uma diferença significativa entre as duas linguagens na sua variação de popularidade nos finais de semana?
+
+```{r warning=FALSE, message=FALSE}
+md =  md %>%
+  group_by(dia_semana) %>%
+  mutate(Usuarios_Dia = sum(Usuarios))
+
+js = js %>%
+  group_by(dia_semana) %>%
+  mutate(Usuarios_Dia = sum(Usuarios))
+
+md1 = md %>% 
+  ggplot(aes(x = dia_semana, y = Usuarios_Dia)) + 
+  geom_point() + 
+  scale_x_discrete(limits=c("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")) + 
+  labs(title = "Edições por Dia da Semana (Java)", x = "Dia da Semana" , y= "Usuários que Fizeram Edições")
+
+js1 = js %>% 
+  ggplot(aes(x = dia_semana, y = Usuarios_Dia)) + 
+  geom_point() + 
+  scale_x_discrete(limits=c("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")) + 
+  labs(title = "Edições por Dia da Semana (Java)", x = "Dia da Semana" , y= "Usuários que Fizeram Edições")
+
+require("gridExtra")
+grid.arrange(md1,js1)
+
+```
+
+A partir dos gráficos é fácil perceber a diferença de popularidade de uma linguagem durante os dias úteis e finais de semana. A diferença é grande a ponto de ser facilmente percepitível.
