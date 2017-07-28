@@ -1,0 +1,136 @@
+---
+title: "Atividade 4 - Checkpoint 2"
+author: "Dandara Sousa"
+date: "27 de julho de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align="center")
+```
+
+```{r include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(plotly)
+library(knitr)
+library(chron)
+library(resample)
+library(grid)
+library(gridExtra)
+
+
+```
+
+## O conjunto de dados
+
+Temos, aqui, uma amostra dos commits dados no [GitHub](http://github.com/) no período 2016-2017. É possível observar a quantidade de pessoas que editaram arquivos de uma determinada extensão durante os dois anos.Os dados brutos contém a contagem de quantas pessoas editaram arquivos com cada extensão de arquivo em cada dia de 2016 e 2017 no github. Não temos dados de todos os repositórios nem de todos os usuários, portanto estamos trabalhando com uma amostra. 
+
+```{r warning=FALSE, message=FALSE}
+conjunto = read.csv("github-users-committing-filetypes.csv")
+
+dados <- conjunto %>%
+  unite("data", the_year, the_month, month_day, sep = "-") %>%
+  mutate(data = as.Date(strptime(data, "%Y-%m-%d"))) %>%
+  mutate(iswknd = is.weekend(data)) %>%
+  mutate(dia_semana = weekdays(data))
+```
+
+#1 Quais são as 3 linguagens mais utilizadas no final de semana?
+```{r}
+dados.fds = dados %>% filter(dados$iswknd == TRUE)
+fds = dados.fds %>%
+  group_by(file_extension) %>%
+  summarise(nUsers = max(users))
+
+fds %>%
+  ggplot(aes(x = reorder(file_extension, nUsers), y = nUsers)) + 
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme_minimal()
+
+```
+
+
+#2 Quais são as 3 linguagens mais utilizadas em dias úteis?
+```{r}
+dados.notfds = dados %>% filter(dados$iswknd == FALSE)
+notfds = dados.notfds %>%
+  group_by(file_extension) %>%
+  summarise(nUsers = max(users))
+
+plot.notfds = notfds %>%
+  ggplot(aes(x = reorder(file_extension, nUsers), y = nUsers)) + 
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme_minimal()
+
+```
+
+#3 Qual mês teve mais contribuição em 2016, de acordo com a amostra?
+```{r}
+dados.2016 = conjunto %>% filter(the_year == "2016")
+
+dados.2016 = dados.2016 %>% 
+  group_by(the_month) %>%
+  mutate(month_users = sum(users))
+
+dados.2016 %>%
+  ggplot(aes(x= the_month, y = month_users)) +
+  geom_line() + 
+  geom_point() +
+  scale_x_continuous(breaks=c(1,3,6,9,12)) +
+  labs(title = "Edições Mensalmente", x = "Mês" , y= "Usuários Editores", colour = "Ano") +
+  theme_minimal()
+```
+
+#4 Qual mês tem mais contribuição em 2017 até agora, de acordo com a amostra?
+```{r}
+dados.2017 = conjunto %>% filter(the_year == "2017")
+
+dados.2017 = dados.2017 %>% 
+  group_by(the_month) %>%
+  mutate(month_users = sum(users))
+
+dados.2017 %>%
+  ggplot(aes(x= the_month, y = month_users)) +
+  geom_line() + 
+  geom_point() +
+  scale_x_continuous(breaks=c(1,3,6,9,12)) +
+  labs(title = "Edições Mensalmente", x = "Mês" , y= "Usuários Editores", colour = "Ano") +
+  theme_minimal()
+```
+
+#5 A linguagem mais popular de 2016 é a mais popular de 2017?
+```{r}
+popular.2016 = conjunto %>%
+  group_by(file_extension) %>%
+  summarise(nUsers = sum(users))
+
+plot.popular.2016 = dados.2016%>%
+  ggplot(aes(x = reorder(file_extension, nUsers), y = nUsers)) + 
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme_minimal()
+```
+
+```{r}
+popular.2017 = dados.2017 %>%
+  group_by(file_extension) %>%
+  summarise(nUsers = sum(users))
+
+plot.popular.2017 = dados.2017 %>%
+  ggplot(aes(x = reorder(file_extension, nUsers), y = nUsers)) + 
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme_minimal()
+
+plot.popular.2017
+```
+
+
+```
+
+
