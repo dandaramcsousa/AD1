@@ -214,7 +214,7 @@ sd_dif <- bootstrap2(data = (js %>% filter(iswknd == TRUE))$users,
                       data2 = (md %>% filter(iswknd == TRUE))$users,
                       sd,
                       R = 10000)
-sd_dif_ci <- CI.percentile(mediana_js, probs = c(.025, .975))
+sd_dif_ci <- CI.percentile(sd_dif, probs = c(.025, .975))
 
 
 data.frame(sd_dif_ci) %>% 

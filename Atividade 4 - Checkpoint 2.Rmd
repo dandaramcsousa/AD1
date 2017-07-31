@@ -28,7 +28,19 @@ library(gridExtra)
 
 Temos, aqui, uma amostra dos commits dados no [GitHub](http://github.com/) no período 2016-2017. É possível observar a quantidade de pessoas que editaram arquivos de uma determinada extensão durante os dois anos.Os dados brutos contém a contagem de quantas pessoas editaram arquivos com cada extensão de arquivo em cada dia de 2016 e 2017 no github. Não temos dados de todos os repositórios nem de todos os usuários, portanto estamos trabalhando com uma amostra. 
 
-```{r warning=FALSE, message=FALSE}
+Anteriormente tínhamos duas questões:
+
+**1. Para cada uma das linguagens de programação, há uma diferença significativa na sua popularidade durante a semana e durante o fim de semana? Essa diferença é grande?**
+
+**2. Existe uma diferença significativa entre as duas linguagens na sua variação de popularidade nos finais de semana?**
+
+Ambas as questões foram respondidas tomando base as duas linguagens mais populares: Markdown e Javascript. 
+
+A partir do trabalho na amostra, é interessante mexer de formas mais ampla. Primeiramente, dado que temos 2016 como um ano com dados em todos os meses, é curioso de se saber quando os programadores foram mais produtivos e também ver se o padrão do mês em 2016 está se repetindo em 2017. Em segundo lugar, trabalhando nos finais de semanas e sabendo que Markdown é a linguagem mais popular pode-se observar a popularidade de forma isolada nos finais de semana. Ou seja, analisar a popularidade no sábado e no domingo. Será que os programadores deixam para programar nos últimos momentos do final de semana ou mantém o clima da sexta e programam mais no sábado?
+
+Para começo de conversa, organizamos nossos dados: 
+
+```{r}
 conjunto = read.csv("github-users-committing-filetypes.csv")
 
 dados <- conjunto %>%
@@ -38,36 +50,10 @@ dados <- conjunto %>%
   mutate(dia_semana = weekdays(data))
 ```
 
-#1 Quais são as 3 linguagens mais utilizadas no final de semana? E em dias úteis?
-```{r}
-dados.fds = dados %>% filter(dados$iswknd == TRUE)
-fds = dados.fds %>%
-  group_by(file_extension) %>%
-  summarise(nUsers = max(users))
+E, agora, partimos para responder nossas questões:
 
-fds %>%
-  ggplot(aes(x = reorder(file_extension, nUsers), y = nUsers)) + 
-  geom_bar(stat = "identity") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  theme_minimal()
+**1. Qual mês teve mais contribuição em 2016, de acordo com a amostra? E em 2017 até agora?**
 
-```
-
-```{r}
-dados.notfds = dados %>% filter(dados$iswknd == FALSE)
-notfds = dados.notfds %>%
-  group_by(file_extension) %>%
-  summarise(nUsers = max(users))
-
-notfds %>%
-  ggplot(aes(x = reorder(file_extension, nUsers), y = nUsers)) + 
-  geom_bar(stat = "identity") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  theme_minimal()
-
-```
-
-#3 Qual mês teve mais contribuição em 2016, de acordo com a amostra? E em 2017 até agora?
 ```{r}
 dados.2016 = conjunto %>% filter(the_year == "2016")
 
@@ -75,46 +61,59 @@ dados.2016 = dados.2016 %>%
   group_by(the_month) %>%
   mutate(month_users = sum(users))
 
-dados.2016 %>%
+p1 = dados.2016 %>%
   ggplot(aes(x= the_month, y = month_users)) +
   geom_line() + 
   geom_point() +
   scale_x_continuous(breaks=c(1,3,6,9,12)) +
   labs(title = "Edições Mensalmente", x = "Mês" , y= "Usuários Editores", colour = "Ano") +
   theme_minimal()
-```
 
-
-```{r}
 dados.2017 = conjunto %>% filter(the_year == "2017")
 
 dados.2017 = dados.2017 %>% 
   group_by(the_month) %>%
   mutate(month_users = sum(users))
 
-dados.2017 %>%
+p2 = dados.2017 %>%
   ggplot(aes(x= the_month, y = month_users)) +
   geom_line() + 
   geom_point() +
-  scale_x_continuous(breaks=c(1,3,6,9,12)) +
   labs(title = "Edições Mensalmente", x = "Mês" , y= "Usuários Editores", colour = "Ano") +
   theme_minimal()
+
+grid.arrange(p1,p2)
 ```
 
-#5 A linguagem mais popular, é mais popular no sábado ou no domingo?
+A partir dos gráficos observamos que o pico de produção em 2016 é em Março e, em 2017 até então, esse também é. E, de forma geral, o padrão de 2016 está sendo seguido em 2017.
+
+**2. A linguagem mais popular, é mais popular no sábado ou no domingo?**
 
 ```{r}
 md = dados %>% filter(file_extension == "md"& iswknd == TRUE)
 md.sabado = md %>% filter(dia_semana == "sábado")
 md.domingo = md %>% filter(dia_semana == "domingo")
 
-md_plot = md %>%
+md %>%
   ggplot(aes(x = dia_semana, y = users)) +
   geom_jitter(width = .1, color = "blue") +
   labs(title = "Atividade de usuários Markdown", x = "Fim de semana", y = "Usuários") +
   theme(plot.title = element_text(hjust = 0.5))
 
-md_plot
-
 ```
 
+Olhando rapidamente não conseguimos ver muita diferença para afirmar de certeza qual é o dia do final de semana preferido pelo os programadores de md. Porém, lembrando que não estamos trabalhando com um conjunto de dados completo, é necessário assegurar a confiabilidade da nossa amostra. Para tal, vamos usar o bootstrap.
+
+```{r}
+sd_dif <- bootstrap2(data = (md.sabado)$users,
+                      data2 = (md.domingo)$users,
+                      sd,
+                      R = 8000)
+sd_dif_ci <- CI.percentile(sd_dif, probs = c(.025, .975))
+
+
+data.frame(sd_dif_ci) %>% 
+  ggplot(aes(x = "Diferença", ymin = X2.5., ymax = X97.5.)) + 
+  geom_errorbar(width = .2) + 
+  geom_hline(yintercept = 0, colour = "red")
+```
