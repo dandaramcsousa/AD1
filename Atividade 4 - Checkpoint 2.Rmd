@@ -52,7 +52,8 @@ dados <- conjunto %>%
 
 E, agora, partimos para responder nossas questões:
 
-**1. Qual mês teve mais contribuição em 2016, de acordo com a amostra? E em 2017 até agora?**
+**1. Qual mês teve mais contribuição em 2016, de acordo com a amostra?**
+Com isso, é interessante observar qual mês é o mais ativo dentre os programadores. Meses de férias (junho, janeiro...) são produtivos? Também é possível pensar como se comporta em 2017 lembrando que o mês de Maio não está completo.
 
 ```{r}
 dados.2016 = conjunto %>% filter(the_year == "2016")
@@ -85,7 +86,7 @@ p2 = dados.2017 %>%
 grid.arrange(p1,p2)
 ```
 
-A partir dos gráficos observamos que o pico de produção em 2016 é em Março e, em 2017 até então, esse também é. E, de forma geral, o padrão de 2016 está sendo seguido em 2017.
+A partir dos gráficos observamos que o pico de produção em 2016 é em Março e, em 2017 até então, esse também é. E, de forma geral, o padrão de 2016 está sendo seguido em 2017. Também é possível observar que Junho e Janeiro não são dos meses mais produtivos, mas mesmo assim é ainda mais produtivo que o segundo semestre do ano.
 
 **2. A linguagem mais popular, é mais popular no sábado ou no domingo?**
 
@@ -117,3 +118,4 @@ data.frame(sd_dif_ci) %>%
   geom_errorbar(width = .2) + 
   geom_hline(yintercept = 0, colour = "red")
 ```
+Reforçando a ideia, o bootstrap com intervalo de confiança incluindo zero mostra que não há como afirmar uma diferença entre os commits nos sábados e domingos.
