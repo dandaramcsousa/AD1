@@ -1,0 +1,110 @@
+---
+title: "Atividade 4 - Checkpoint 4"
+author: "Dandara Sousa"
+date: "4 de agosto de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align="center")
+
+library(tidyverse)
+library(resample)
+library(GGally)
+library(knitr)
+library(lubridate)
+library(chron)
+library(highcharter)
+library(xts)
+library(resample)
+library(coin)
+
+theme_set(theme_bw())
+```
+
+#Nossos dados
+
+```{r}
+dados <- read.csv("github-users-committing-filetypes.csv")
+dados <- dados %>%
+  unite("data", the_year, the_month, month_day, sep = "-") %>%
+  mutate(data = as.Date(strptime(data, "%Y-%m-%d"))) %>%
+  mutate(dia_da_semana = weekdays(data)) %>%
+  mutate(mes = month(data)) %>%
+  mutate(fds = is.weekend(data)) %>%
+  mutate(is_segsex = dia_da_semana %in% c("segunda", "sexta"))
+```
+
+
+##Existe diferença no número de usuários nos dias próximos ao fim de semana (segunda e sexta) e os do meio da semana (terça, quarta e quinta)?
+
+Será que o fim de semana afeta a produtividade dos usuários do GitHub durante a semana? Para isso, vamos tomar como base a mediana.
+
+**Utilizando bootstrap**
+
+```{r}
+dados.ss = bootstrap(dados %>%
+                filter(is_segsex), median(users))
+
+ss.CI = CI.percentile(dados.ss, probs = c(.025, .975))
+
+
+dados.Nss = bootstrap(dados %>%
+                filter(!is_segsex), median(users))
+
+Nss.CI = CI.percentile(dados.Nss, probs = c(.025, .975))
+
+
+df <- data.frame(rbind(ss.CI,
+                       Nss.CI))
+
+df$medida = row.names(df)
+
+df %>% 
+  ggplot(aes(x = medida, ymin = X2.5., ymax = X97.5.)) + 
+  geom_errorbar(width = .2)
+```
+
+Temos bastante interseção entre os intervalos, então precisaremos observar a diferença para termos certeza sobre as conclusão que iremos obter.
+
+```{r}
+mSS <- bootstrap2(data = (dados %>% filter(is_segsex))$users,
+                  data2 = (dados %>% filter(!is_segsex))$users,
+                  median,
+                  R = 10000)
+
+mSS.CI <- CI.percentile(mSS, probs = c(.025, .975))
+
+data.frame(mSS.CI) %>%
+  ggplot(aes(x = "Diferença", ymin = X2.5., ymax = X97.5.)) + 
+  geom_errorbar(width = .2) + 
+  geom_hline(yintercept = 0, colour = "red")
+```
+
+Como o intervalo da diferença (`r mSS.CI`) inclui o zero não podemos obter conclusões significativas para essa questão.
+
+**Testes de hipóteses**
+
+
+```{r}
+permutation <- permutationTest2(dados, mean(users), treatment = is_segsex)
+hist(permutation)
+```
+```{r}
+permutation
+```
+
+```{r}
+oneway_test(users ~ as.factor(is_segsex), 
+            data = head(dados,100), 
+            distribution = "exact")
+
+oneway_test(users ~ as.factor(is_segsex), 
+            data = head(dados,100), 
+            distribution = "exact") %>% 
+  pvalue()
+```
+
+
+
+ps.: Agradecimento à Hugo por todo apoio dado.
