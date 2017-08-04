@@ -94,16 +94,8 @@ hist(permutation)
 permutation
 ```
 
-```{r}
-oneway_test(users ~ as.factor(is_segsex), 
-            data = head(dados,100), 
-            distribution = "exact")
 
-oneway_test(users ~ as.factor(is_segsex), 
-            data = head(dados,100), 
-            distribution = "exact") %>% 
-  pvalue()
-```
+
 
 
 
