@@ -22,7 +22,11 @@ library(coin)
 theme_set(theme_bw())
 ```
 
-#Nossos dados
+####Nossos dados
+
+Temos, aqui, uma amostra dos commits dados no [GitHub](http://github.com/) no período 2016-2017. É possível observar a quantidade de pessoas que editaram arquivos de uma determinada extensão durante os dois anos.Os dados brutos contém a contagem de quantas pessoas editaram arquivos com cada extensão de arquivo em cada dia de 2016 e 2017 no github. Não temos dados de todos os repositórios nem de todos os usuários, portanto estamos trabalhando com uma amostra. 
+
+Primeiro, temos que tratar os dados e a partir podemos analisá-los. 
 
 ```{r}
 dados <- read.csv("github-users-committing-filetypes.csv")
@@ -32,11 +36,12 @@ dados <- dados %>%
   mutate(dia_da_semana = weekdays(data)) %>%
   mutate(mes = month(data)) %>%
   mutate(fds = is.weekend(data)) %>%
-  mutate(is_segsex = dia_da_semana %in% c("segunda", "sexta"))
+  mutate(is_segsex = dia_da_semana %in% c("segunda-feira", "sexta-feira"))
+head(dados)
 ```
 
 
-##Existe diferença no número de usuários nos dias próximos ao fim de semana (segunda e sexta) e os do meio da semana (terça, quarta e quinta)?
+####Existe diferença no número de usuários nos dias próximos ao fim de semana (segunda e sexta) e os do meio da semana (terça, quarta e quinta)?
 
 Será que o fim de semana afeta a produtividade dos usuários do GitHub durante a semana? Para isso, vamos tomar como base a mediana.
 
@@ -85,16 +90,20 @@ Como o intervalo da diferença (`r mSS.CI`) inclui o zero não podemos obter con
 
 **Testes de hipóteses**
 
+Uma forma alternativa é utilizar o teste de hipóteses onde nossa hipótese nula é que há uma diferença no número de usuários nos dias próximos ao fim de semana e os dos dias do meio da semana. A partir daí veremos o [p-valor](http://www.portalaction.com.br/inferencia/512-calculo-e-interpretacao-do-p-valor) do teste e, se ele for menor que 0.05, rejeitamos a hipótese.
+Primeiro, observaremos a densidade da amostra quando permutada. O gráfico abaixo mostra qual a chance da nossa pergunta ter resposta positiva dada nossa amostra. Como é possível ver, as chances são bem pequenas. Vamos garantir isso observando melhor os dados.
 
 ```{r}
 permutation <- permutationTest2(dados, mean(users), treatment = is_segsex)
 hist(permutation)
 ```
+
 ```{r}
 permutation
 ```
 
-
+A partir desse teste é possível observar que o p valor obteve um resultado muito pequeno (bem abaixo de 0.05) e por esse motivo nós então rejeitamos a hipótese nula e aceitamos que não há diferença entre o número de usuários da segunda/sexta e os de terça/quarta/quinta.
+Também conseguimos notar que diferente do bootstrap, esse teste nos deu um resultado concreto sobre a amostra.
 
 
 
