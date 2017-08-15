@@ -1,0 +1,24 @@
+---
+title: "Atividade 5 - Checkpoint 1"
+author: "Dandara Sousa"
+date: "15 de agosto de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+Perguntas: 
+ * O que causa atração à primeira vista? (attr)
+ * E como isso varia para diferentes sexos? (attr e gender) 
+ * Pessoas de diferentes backgrounds? 
+ * O que são as características mais e menos importantes para um homem/mulher ser percebido bem em um speed date? 
+ * Que grupos são mais otimistas e pessimistas após o encontro?
+
+```{r}
+speedDat <- read.csv("speed-dating.csv")
+
+```
+
